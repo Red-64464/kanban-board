@@ -1,0 +1,116 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #0d1117;
+  color: #e6edf3;
+}
+
+/* Scrollbar custom */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #161b22;
+}
+::-webkit-scrollbar-thumb {
+  background: #30363d;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #484f58;
+}
+
+/* Transitions globales */
+.kanban-card {
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.kanban-card:hover {
+  transform: translateY(-2px);
+}
+
+.kanban-card.dragging {
+  opacity: 0.5;
+  transform: scale(1.02);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+}
+
+/* Drop zone highlight */
+.drop-zone-active {
+  background-color: rgba(88, 166, 255, 0.05);
+  border-color: rgba(88, 166, 255, 0.3) !important;
+}
+
+/* Input & Select styles */
+.form-input {
+  @apply w-full bg-dark-700 border border-dark-500 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-accent-blue focus:ring-1 focus:ring-accent-blue transition-colors;
+}
+
+.form-label {
+  @apply block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wide;
+}
+
+/* Badge colors */
+.badge-haute {
+  @apply bg-red-500/20 text-red-400 border border-red-500/30;
+}
+.badge-moyenne {
+  @apply bg-yellow-500/20 text-yellow-400 border border-yellow-500/30;
+}
+.badge-basse {
+  @apply bg-green-500/20 text-green-400 border border-green-500/30;
+}
+
+/* Priority indicators */
+.priority-haute {
+  @apply text-red-400;
+}
+.priority-moyenne {
+  @apply text-yellow-400;
+}
+.priority-basse {
+  @apply text-green-400;
+}
+
+/* Status column colors */
+.col-todo {
+  @apply border-t-accent-blue;
+}
+.col-inprogress {
+  @apply border-t-accent-purple;
+}
+.col-done {
+  @apply border-t-accent-green;
+}
+
+/* Deadline colors */
+.deadline-danger {
+  @apply text-red-400 bg-red-500/10;
+}
+.deadline-warning {
+  @apply text-orange-400 bg-orange-500/10;
+}
+.deadline-ok {
+  @apply text-green-400 bg-green-500/10;
+}
+.deadline-normal {
+  @apply text-gray-400;
+}

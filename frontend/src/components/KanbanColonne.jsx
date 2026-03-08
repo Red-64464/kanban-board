@@ -32,6 +32,7 @@ export default function KanbanColonne({
   taches,
   onCardClick,
   onAddClick,
+  onCardMove,
 }) {
   const { setNodeRef, isOver } = useDroppable({ id });
   const styles = COLUMN_STYLES[id] || COLUMN_STYLES.todo;
@@ -115,6 +116,7 @@ export default function KanbanColonne({
                 key={tache.id}
                 tache={tache}
                 onClick={() => onCardClick(tache)}
+                onMove={onCardMove}
               />
             ))}
           </div>

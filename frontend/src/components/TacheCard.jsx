@@ -7,7 +7,7 @@ const AVATAR_COLORS = {
   Mehdi: "bg-purple-600",
 };
 
-export default function TacheCard({ tache, onClick }) {
+export default function TacheCard({ tache, onClick, onMove }) {
   const {
     attributes,
     listeners,
@@ -27,6 +27,11 @@ export default function TacheCard({ tache, onClick }) {
   const deadline = getDeadlineStatus(tache.date_limite);
   const priorite = getPrioriteConfig(tache.priorite);
 
+  const handleMoveClick = (e) => {
+    e.stopPropagation();
+    onMove(tache);
+  };
+
   // Border left color based on deadline urgency
   const borderColor =
     {
@@ -42,8 +47,29 @@ export default function TacheCard({ tache, onClick }) {
       ref={setNodeRef}
       style={style}
       {...attributes}
-      className={`kanban-card group bg-dark-700 rounded-xl border border-dark-600 border-l-2 ${borderColor} p-4 cursor-grab active:cursor-grabbing shadow-sm hover:border-dark-500 hover:shadow-lg hover:shadow-black/30`}
+      className={`kanban-card group bg-dark-700 rounded-xl border border-dark-600 border-l-2 ${borderColor} p-4 cursor-grab active:cursor-grabbing shadow-sm hover:border-dark-500 hover:shadow-lg hover:shadow-black/30 relative`}
     >
+      {/* Move button (top right) - useful for mobile/touch */}
+      <button
+        onClick={handleMoveClick}
+        className="absolute top-2 right-2 p-1.5 rounded-lg bg-dark-600 hover:bg-dark-500 text-dark-400 hover:text-gray-100 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100 sm:opacity-0"
+        title="Déplacer vers une autre colonne"
+      >
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
+          />
+        </svg>
+      </button>
+
       {/* Drag handle + click area */}
       <div
         {...listeners}

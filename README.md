@@ -108,3 +108,9 @@ L'application s'ouvre sur **http://localhost:3000**
 - **Frontend** : React 18 + Vite + TailwindCSS + @dnd-kit
 - **Backend** : Node.js + Express
 - **BDD** : SQLite via better-sqlite3
+
+---
+
+# Resto2Luxe (JavaFX)
+
+Application JavaFX de commande de repas en Click & Collect.

@@ -18,6 +18,7 @@ import FiltresBar from "./components/FiltresBar.jsx";
 
 import { getTaches, updateStatut } from "./api.js";
 import { COLONNES } from "./utils.js";
+import logo from "../logo/ChatGPT Image 8 mars 2026, 22_39_42.png";
 
 const COLONNES_IDS = ["todo", "inprogress", "done"];
 
@@ -154,6 +155,31 @@ export default function App() {
   const handleDeleted = (id) =>
     setTaches((prev) => prev.filter((t) => t.id !== id));
 
+  const handleMoveTask = async (tache) => {
+    const currentIndex = COLONNES_IDS.indexOf(tache.statut);
+    const nextIndex = (currentIndex + 1) % COLONNES_IDS.length;
+    const nextStatut = COLONNES_IDS[nextIndex];
+
+    // Calculer la nouvelle position (à la fin de la colonne cible)
+    const targetColTaches = taches.filter((t) => t.statut === nextStatut);
+    const nextPosition = targetColTaches.length;
+
+    try {
+      // Mise à jour optimiste
+      setTaches((prev) =>
+        prev.map((t) =>
+          t.id === tache.id
+            ? { ...t, statut: nextStatut, position: nextPosition }
+            : t,
+        ),
+      );
+      await updateStatut(tache.id, nextStatut, nextPosition);
+    } catch (err) {
+      console.error("Erreur déplacement manuel:", err);
+      loadTaches();
+    }
+  };
+
   // Stats
   const total = taches.length;
   const done = taches.filter((t) => t.statut === "done").length;
@@ -175,31 +201,21 @@ export default function App() {
       />
 
       {/* Header */}
-      <header className="border-b border-dark-700 bg-dark-800/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+      <header className="border-b border-[#D88D23]/30 bg-[#161313] backdrop-blur-sm sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-6 py-3">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             {/* Logo + title */}
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center">
-                <svg
-                  className="w-4 h-4 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                  />
-                </svg>
-              </div>
+              <img
+                src={logo}
+                alt="Resto2Luxe Logo"
+                className="w-12 h-12 object-contain"
+              />
               <div>
-                <h1 className="text-sm font-semibold text-gray-100">
-                  Kanban Board
-                </h1>
-                <p className="text-xs text-dark-500">Projet Scolaire</p>
+                <h1 className="text-lg font-bold text-[#E7B54C]">Resto2Luxe</h1>
+                <p className="text-[10px] text-gray-500 uppercase tracking-widest font-medium">
+                  Gestion Kanban
+                </p>
               </div>
             </div>
 
@@ -216,7 +232,7 @@ export default function App() {
                 </div>
                 <div className="w-24 h-2 bg-dark-700 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-gradient-to-r from-blue-600 to-green-500 rounded-full transition-all duration-500"
+                    className="h-full bg-gradient-to-r from-[#D88D23] to-[#E7B54C] rounded-full transition-all duration-700 shadow-[0_0_10px_rgba(231,181,76,0.5)]"
                     style={{ width: `${progress}%` }}
                   />
                 </div>
@@ -226,7 +242,7 @@ export default function App() {
             {/* New task button */}
             <button
               onClick={() => setShowCreateModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors shadow-lg shadow-blue-900/30"
+              className="flex items-center gap-2 px-5 py-2.5 bg-[#D88D23] hover:bg-[#E7B54C] text-[#161313] rounded-lg text-sm font-bold transition-all shadow-lg shadow-orange-950/20 active:scale-95"
             >
               <svg
                 className="w-4 h-4"
@@ -237,7 +253,7 @@ export default function App() {
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  strokeWidth={2}
+                  strokeWidth={2.5}
                   d="M12 4v16m8-8H4"
                 />
               </svg>
@@ -287,6 +303,7 @@ export default function App() {
                   taches={getTachesByColonne(col.id)}
                   onCardClick={setSelectedTache}
                   onAddClick={() => setShowCreateModal(true)}
+                  onCardMove={handleMoveTask}
                 />
               ))}
             </div>

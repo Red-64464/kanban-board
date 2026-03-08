@@ -17,7 +17,7 @@ const DISCORD_WEBHOOK_URL =
 
 // Mappage des pseudos Discord pour les mentions
 const DISCORD_MENTIONS = {
-  Ilias: "@nzoxy_",
+  Ilias: "@Red ♘",
   Mehdi: "@aiico",
 };
 

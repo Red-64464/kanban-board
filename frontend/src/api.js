@@ -17,8 +17,8 @@ const DISCORD_WEBHOOK_URL =
 
 // Mappage des pseudos Discord pour les mentions
 const DISCORD_MENTIONS = {
-  Ilias: "@Red ♘",
-  Mehdi: "@aiico",
+  Ilias: "691970121362571315",
+  Mehdi: "940298554432430131",
 };
 
 export const sendDiscordNotification = async (

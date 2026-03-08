@@ -52,7 +52,7 @@ export default function TacheCard({ tache, onClick, onMove }) {
       {/* Move button (top right) - useful for mobile/touch */}
       <button
         onClick={handleMoveClick}
-        className="absolute top-2 right-2 p-1.5 rounded-lg bg-dark-600 hover:bg-dark-500 text-dark-400 hover:text-gray-100 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100 sm:opacity-0"
+        className="absolute top-2 right-2 p-1.5 rounded-lg bg-dark-600 hover:bg-dark-500 text-dark-300 hover:text-[#E7B54C] transition-all shadow-sm z-10 active:scale-90"
         title="Déplacer vers une autre colonne"
       >
         <svg
@@ -64,7 +64,7 @@ export default function TacheCard({ tache, onClick, onMove }) {
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
-            strokeWidth={2}
+            strokeWidth={2.5}
             d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
           />
         </svg>

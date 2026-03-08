@@ -16,7 +16,7 @@ import TacheModal from "./components/TacheModal.jsx";
 import NouvellesTacheModal from "./components/NouvellesTacheModal.jsx";
 import FiltresBar from "./components/FiltresBar.jsx";
 
-import { getTaches, updateStatut } from "./api.js";
+import { getTaches, updateStatut, sendDiscordNotification } from "./api.js";
 import { COLONNES } from "./utils.js";
 import logo from "../logo/ChatGPT Image 8 mars 2026, 22_39_42.png";
 
@@ -141,6 +141,8 @@ export default function App() {
     if (movedTask) {
       try {
         await updateStatut(activeId, movedTask.statut, movedTask.position);
+        // Notification Discord après le drag & drop
+        sendDiscordNotification(movedTask, movedTask.statut);
       } catch (err) {
         console.error("Erreur mise à jour statut:", err);
         loadTaches(); // revert on error
@@ -174,6 +176,8 @@ export default function App() {
         ),
       );
       await updateStatut(tache.id, nextStatut, nextPosition);
+      // Notification Discord après le déplacement manuel
+      sendDiscordNotification(tache, nextStatut);
     } catch (err) {
       console.error("Erreur déplacement manuel:", err);
       loadTaches();

@@ -12,13 +12,17 @@ export const updateStatut = (id, statut, position) =>
   api.patch(`/taches/${id}/statut`, { statut, position });
 export const deleteTache = (id) => api.delete(`/taches/${id}`);
 
-const DISCORD_WEBHOOK_URL =
-  "https://discord.com/api/webhooks/1478804168813576313/-EUl3FSAcIjZEDvua8VlKcyHAT5GJLg7wX4tmzS6oKNVLehmb7T4qK6P0Mza86hZyniN";
+const WEBHOOKS = {
+  Ilias:
+    "https://discord.com/api/webhooks/1478804168813576313/-EUl3FSAcIjZEDvua8VlKcyHAT5GJLg7wX4tmzS6oKNVLehmb7T4qK6P0Mza86hZyniN",
+  Mehdi:
+    "https://discord.com/api/webhooks/1480330839307976767/J2IQdDFRUw-SNKL3-uZ6DEuwkhcRxvIcZxb2VGdqF7IV7QIgOLo3_hx1TirXpFAFEtac",
+};
 
-// Mappage des pseudos Discord pour les mentions
+// Mappage des IDs Discord pour les vrais pings (format <@ID>)
 const DISCORD_MENTIONS = {
-  Ilias: "691970121362571315",
-  Mehdi: "940298554432430131",
+  Ilias: "<@691970121362571315>",
+  Mehdi: "<@940298554432430131>",
 };
 
 export const sendDiscordNotification = async (
@@ -31,6 +35,9 @@ export const sendDiscordNotification = async (
     inprogress: "EN COURS ⚡",
     done: "TERMINÉ ✅",
   };
+
+  const webhookUrl = WEBHOOKS[tache.responsable];
+  if (!webhookUrl) return;
 
   const mention = DISCORD_MENTIONS[tache.responsable] || tache.responsable;
 
@@ -70,7 +77,8 @@ export const sendDiscordNotification = async (
   };
 
   try {
-    await api.post(DISCORD_WEBHOOK_URL, message);
+    // Utilisation d'axios directement pour éviter les problèmes de baseURL de l'instance 'api'
+    await axios.post(webhookUrl, message);
   } catch (err) {
     console.error("Erreur Discord Webhook:", err);
   }

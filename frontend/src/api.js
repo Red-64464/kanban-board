@@ -46,13 +46,13 @@ export const sendDiscordNotification = async (
   let description = "";
 
   if (actionType === "move") {
-    content = `🔄 **Mise à jour Kanban** - ${mention}`;
-    title = tache.titre;
-    description = `La tâche de **${tache.responsable}** est passée en **${statusLabels[extraInfo.nouveauStatut]}**.`;
+    content = `🔄 **MISE À JOUR KANBAN** - ${mention}`;
+    title = `📋 ${tache.titre}`;
+    description = `**Changement de statut :** La tâche est passée en **${statusLabels[extraInfo.nouveauStatut]}**.\n\n**📝 Description :**\n${tache.description || "*Aucune description fournie.*"}`;
   } else if (actionType === "create") {
-    content = `🆕 **Nouvelle Tâche** - ${mention}`;
-    title = `🚀 Nouvelle tâche : ${tache.titre}`;
-    description = `Une nouvelle tâche a été assignée à **${tache.responsable}**.`;
+    content = `🚀 **NOUVELLE TÂCHE ASSIGNÉE** - ${mention}`;
+    title = `🆕 ${tache.titre}`;
+    description = `**Responsable :** ${tache.responsable}\n\n**📝 Description :**\n${tache.description || "*Aucune description fournie.*"}`;
   }
 
   const message = {
@@ -61,16 +61,23 @@ export const sendDiscordNotification = async (
       {
         title: title,
         description: description,
-        color: 0xd88d23, // Couleur Resto2Luxe
+        color: 0xd88d23, // Couleur Or Resto2Luxe
         fields: [
-          { name: "Priorité", value: tache.priorite, inline: true },
           {
-            name: "Date limite",
-            value: tache.date_limite || "Non définie",
+            name: "⚡ Priorité",
+            value: `\`${tache.priorite}\``,
+            inline: true,
+          },
+          {
+            name: "📅 Date limite",
+            value: `\`${tache.date_limite || "Non définie"}\``,
             inline: true,
           },
         ],
-        footer: { text: "Resto2Luxe — Kanban Automation" },
+        footer: {
+          text: "Resto2Luxe — Système de Gestion Interne",
+          icon_url: "https://i.imgur.com/your-logo-link.png", // Optionnel : lien direct vers votre logo
+        },
         timestamp: new Date().toISOString(),
       },
     ],

@@ -142,7 +142,9 @@ export default function App() {
       try {
         await updateStatut(activeId, movedTask.statut, movedTask.position);
         // Notification Discord après le drag & drop
-        sendDiscordNotification(movedTask, movedTask.statut);
+        sendDiscordNotification(movedTask, "move", {
+          nouveauStatut: movedTask.statut,
+        });
       } catch (err) {
         console.error("Erreur mise à jour statut:", err);
         loadTaches(); // revert on error
@@ -151,7 +153,10 @@ export default function App() {
   };
 
   // Handlers
-  const handleCreated = (newTache) => setTaches((prev) => [...prev, newTache]);
+  const handleCreated = (newTache) => {
+    setTaches((prev) => [...prev, newTache]);
+    sendDiscordNotification(newTache, "create");
+  };
   const handleUpdated = (updated) =>
     setTaches((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
   const handleDeleted = (id) =>
@@ -177,7 +182,7 @@ export default function App() {
       );
       await updateStatut(tache.id, nextStatut, nextPosition);
       // Notification Discord après le déplacement manuel
-      sendDiscordNotification(tache, nextStatut);
+      sendDiscordNotification(tache, "move", { nouveauStatut: nextStatut });
     } catch (err) {
       console.error("Erreur déplacement manuel:", err);
       loadTaches();

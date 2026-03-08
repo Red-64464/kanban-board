@@ -15,29 +15,45 @@ export const deleteTache = (id) => api.delete(`/taches/${id}`);
 const DISCORD_WEBHOOK_URL =
   "https://discord.com/api/webhooks/1478804168813576313/-EUl3FSAcIjZEDvua8VlKcyHAT5GJLg7wX4tmzS6oKNVLehmb7T4qK6P0Mza86hZyniN";
 
-// Mappage des IDs Discord pour les mentions
+// Mappage des pseudos Discord pour les mentions
 const DISCORD_MENTIONS = {
-  Ilias: "858348348348348348", // ID d'Ilias (à remplacer par le vrai ID si besoin)
-  Mehdi: "947348348348348348", // ID de Mehdi (à remplacer par le vrai ID si besoin)
+  Ilias: "@nzoxy_",
+  Mehdi: "@aiico",
 };
 
-export const sendDiscordNotification = async (tache, nouveauStatut) => {
+export const sendDiscordNotification = async (
+  tache,
+  actionType,
+  extraInfo = {},
+) => {
   const statusLabels = {
     todo: "À FAIRE 📝",
     inprogress: "EN COURS ⚡",
     done: "TERMINÉ ✅",
   };
 
-  const mention = DISCORD_MENTIONS[tache.responsable]
-    ? `<@${DISCORD_MENTIONS[tache.responsable]}>`
-    : tache.responsable;
+  const mention = DISCORD_MENTIONS[tache.responsable] || tache.responsable;
+
+  let content = "";
+  let title = "";
+  let description = "";
+
+  if (actionType === "move") {
+    content = `🔄 **Mise à jour Kanban** - ${mention}`;
+    title = tache.titre;
+    description = `La tâche de **${tache.responsable}** est passée en **${statusLabels[extraInfo.nouveauStatut]}**.`;
+  } else if (actionType === "create") {
+    content = `🆕 **Nouvelle Tâche** - ${mention}`;
+    title = `🚀 Nouvelle tâche : ${tache.titre}`;
+    description = `Une nouvelle tâche a été assignée à **${tache.responsable}**.`;
+  }
 
   const message = {
-    content: `🔔 **Notification Kanban** - ${mention}`,
+    content: content,
     embeds: [
       {
-        title: tache.titre,
-        description: `La tâche de **${tache.responsable}** vient de passer en **${statusLabels[nouveauStatut]}**.`,
+        title: title,
+        description: description,
         color: 0xd88d23, // Couleur Resto2Luxe
         fields: [
           { name: "Priorité", value: tache.priorite, inline: true },
@@ -47,9 +63,6 @@ export const sendDiscordNotification = async (tache, nouveauStatut) => {
             inline: true,
           },
         ],
-        thumbnail: {
-          url: "https://raw.githubusercontent.com/username/repo/main/logo.png", // Optionnel : URL directe du logo
-        },
         footer: { text: "Resto2Luxe — Kanban Automation" },
         timestamp: new Date().toISOString(),
       },

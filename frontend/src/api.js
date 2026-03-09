@@ -36,57 +36,67 @@ export const sendDiscordNotification = async (
     done: "TERMINÉ ✅",
   };
 
-  const webhookUrl = WEBHOOKS[tache.responsable];
-  if (!webhookUrl) return;
+  const responsables = (tache.responsable || "Ilias")
+    .split(",")
+    .map((r) => r.trim());
 
-  const mention = DISCORD_MENTIONS[tache.responsable] || tache.responsable;
+  for (const r of responsables) {
+    const webhookUrl = WEBHOOKS[r];
+    if (!webhookUrl) continue;
+    const mention = DISCORD_MENTIONS[r] || r;
 
-  let content = "";
-  let title = "";
-  let description = "";
+    let content = "";
+    let title = "";
+    let description = "";
 
-  if (actionType === "move") {
-    content = `🔄 **MISE À JOUR KANBAN** - ${mention}`;
-    title = `📋 ${tache.titre}`;
-    description = `**Changement de statut :** La tâche est passée en **${statusLabels[extraInfo.nouveauStatut]}**.\n\n**📝 Description :**\n${tache.description || "*Aucune description fournie.*"}`;
-  } else if (actionType === "create") {
-    content = `🚀 **NOUVELLE TÂCHE ASSIGNÉE** - ${mention}`;
-    title = `🆕 ${tache.titre}`;
-    description = `**Responsable :** ${tache.responsable}\n\n**📝 Description :**\n${tache.description || "*Aucune description fournie.*"}`;
-  }
+    if (actionType === "move") {
+      content = `🔄 **MISE À JOUR KANBAN** - ${mention}`;
+      title = `📋 ${tache.titre}`;
+      description = `**Changement de statut :** La tâche est passée en **${statusLabels[extraInfo.nouveauStatut]}**.\n\n**📝 Description :**\n${tache.description || "*Aucune description fournie.*"}`;
+    } else if (actionType === "create") {
+      content = `🚀 **NOUVELLE TÂCHE ASSIGNÉE** - ${mention}`;
+      title = `🆕 ${tache.titre}`;
+      description = `**Responsable :** ${tache.responsable}\n\n**📝 Description :**\n${tache.description || "*Aucune description fournie.*"}`;
+    }
 
-  const message = {
-    content: content,
-    embeds: [
+    const fields = [
+      { name: "⚡ Priorité", value: `\`${tache.priorite}\``, inline: true },
       {
-        title: title,
-        description: description,
-        color: 0xd88d23, // Couleur Or Resto2Luxe
-        fields: [
-          {
-            name: "⚡ Priorité",
-            value: `\`${tache.priorite}\``,
-            inline: true,
-          },
-          {
-            name: "📅 Date limite",
-            value: `\`${tache.date_limite || "Non définie"}\``,
-            inline: true,
-          },
-        ],
-        footer: {
-          text: "Resto2Luxe — Système de Gestion Interne",
-          icon_url: "https://i.imgur.com/your-logo-link.png", // Optionnel : lien direct vers votre logo
-        },
-        timestamp: new Date().toISOString(),
+        name: "📅 Date limite",
+        value: `\`${tache.date_limite || "Non définie"}\``,
+        inline: true,
       },
-    ],
-  };
+    ];
+    if (tache.duree_estimee) {
+      fields.push({
+        name: "⏱ Durée estimée",
+        value: `\`~${tache.duree_estimee}h\``,
+        inline: true,
+      });
+    }
 
-  try {
-    // Utilisation d'axios directement pour éviter les problèmes de baseURL de l'instance 'api'
-    await axios.post(webhookUrl, message);
-  } catch (err) {
-    console.error("Erreur Discord Webhook:", err);
+    const message = {
+      content,
+      embeds: [
+        {
+          title,
+          description,
+          color: 0xd88d23,
+          fields,
+          footer: { text: "Resto2Luxe — Système de Gestion Interne" },
+          timestamp: new Date().toISOString(),
+        },
+      ],
+    };
+
+    try {
+      await axios.post(webhookUrl, message);
+    } catch (err) {
+      console.error("Erreur Discord Webhook:", err);
+    }
   }
 };
+
+export const getSettings = () => api.get("/settings");
+export const updateSetting = (key, value) =>
+  api.put(`/settings/${key}`, { value });

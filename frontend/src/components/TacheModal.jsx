@@ -10,6 +10,9 @@ export default function TacheModal({ tache, onClose, onUpdated, onDeleted }) {
     responsable: tache.responsable,
     priorite: tache.priorite,
     date_limite: tache.date_limite ? tache.date_limite.split("T")[0] : "",
+    rappel_jours: tache.rappel_jours != null ? String(tache.rappel_jours) : "",
+    duree_estimee:
+      tache.duree_estimee != null ? String(tache.duree_estimee) : "",
   });
   const [loading, setLoading] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -29,6 +32,8 @@ export default function TacheModal({ tache, onClose, onUpdated, onDeleted }) {
       const res = await updateTache(tache.id, {
         ...form,
         date_limite: form.date_limite || null,
+        rappel_jours: form.rappel_jours ? Number(form.rappel_jours) : null,
+        duree_estimee: form.duree_estimee ? Number(form.duree_estimee) : null,
       });
       toast.success("Tâche mise à jour !");
       onUpdated(res.data);
@@ -121,22 +126,44 @@ export default function TacheModal({ tache, onClose, onUpdated, onDeleted }) {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="form-label">Responsable</label>
-              <select
-                name="responsable"
-                value={form.responsable}
-                onChange={handleChange}
-                className="form-input"
-              >
-                {RESPONSABLES.map((r) => (
-                  <option key={r} value={r}>
-                    {r}
-                  </option>
-                ))}
-              </select>
+          <div>
+            <label className="form-label">Responsable</label>
+            <div className="flex gap-2">
+              {[
+                {
+                  label: "Ilias",
+                  value: "Ilias",
+                  color: "bg-blue-600/30 text-blue-300 border-blue-500/40",
+                },
+                {
+                  label: "Mehdi",
+                  value: "Mehdi",
+                  color:
+                    "bg-purple-600/30 text-purple-300 border-purple-500/40",
+                },
+                {
+                  label: "Les deux",
+                  value: "Ilias,Mehdi",
+                  color: "bg-[#D88D23]/20 text-[#E7B54C] border-[#D88D23]/40",
+                },
+              ].map(({ label, value, color }) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setForm({ ...form, responsable: value })}
+                  className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium border transition-colors ${
+                    form.responsable === value
+                      ? color
+                      : "border-dark-600 text-dark-400 hover:text-gray-300 hover:border-dark-500 hover:bg-dark-700"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="form-label">Priorité</label>
               <select
@@ -152,6 +179,18 @@ export default function TacheModal({ tache, onClose, onUpdated, onDeleted }) {
                 ))}
               </select>
             </div>
+            <div>
+              <label className="form-label">Durée estimée (h)</label>
+              <input
+                type="number"
+                name="duree_estimee"
+                value={form.duree_estimee}
+                onChange={handleChange}
+                placeholder="Ex: 4"
+                min="0"
+                className="form-input"
+              />
+            </div>
           </div>
 
           <div>
@@ -164,6 +203,24 @@ export default function TacheModal({ tache, onClose, onUpdated, onDeleted }) {
               className="form-input"
             />
           </div>
+
+          {form.date_limite && (
+            <div>
+              <label className="form-label">Rappel Discord</label>
+              <select
+                name="rappel_jours"
+                value={form.rappel_jours}
+                onChange={handleChange}
+                className="form-input"
+              >
+                <option value="">Aucun rappel</option>
+                <option value="1">1 jour avant</option>
+                <option value="2">2 jours avant</option>
+                <option value="3">3 jours avant</option>
+                <option value="7">1 semaine avant</option>
+              </select>
+            </div>
+          )}
 
           {/* Footer */}
           <div className="flex gap-3 pt-2">

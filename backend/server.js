@@ -15,6 +15,85 @@ const db = createClient({
   authToken: process.env.TURSO_AUTH_TOKEN,
 });
 
+// ─── DISCORD WEBHOOKS ────────────────────────────────────────────────────────
+const WEBHOOKS = {
+  Ilias:
+    "https://discord.com/api/webhooks/1478804168813576313/-EUl3FSAcIjZEDvua8VlKcyHAT5GJLg7wX4tmzS6oKNVLehmb7T4qK6P0Mza86hZyniN",
+  Mehdi:
+    "https://discord.com/api/webhooks/1480330839307976767/J2IQdDFRUw-SNKL3-uZ6DEuwkhcRxvIcZxb2VGdqF7IV7QIgOLo3_hx1TirXpFAFEtac",
+};
+
+const DISCORD_MENTIONS = {
+  Ilias: "<@691970121362571315>",
+  Mehdi: "<@940298554432430131>",
+};
+
+async function sendRappelDiscord(tache) {
+  const responsables = tache.responsable.split(",").map((r) => r.trim());
+  for (const r of responsables) {
+    const webhookUrl = WEBHOOKS[r];
+    if (!webhookUrl) continue;
+    const mention = DISCORD_MENTIONS[r] || r;
+    try {
+      await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content: `⏰ **RAPPEL KANBAN** - ${mention}`,
+          embeds: [
+            {
+              title: `⏰ Rappel : ${tache.titre}`,
+              description: `La tâche expire dans **${tache.rappel_jours} jour(s)** !\n\n**📝 Description :**\n${tache.description || "*Aucune description.*"}`,
+              color: 0xe67e22,
+              fields: [
+                {
+                  name: "⚡ Priorité",
+                  value: `\`${tache.priorite}\``,
+                  inline: true,
+                },
+                {
+                  name: "📅 Date limite",
+                  value: `\`${tache.date_limite}\``,
+                  inline: true,
+                },
+              ],
+              footer: { text: "Resto2Luxe — Rappel automatique" },
+              timestamp: new Date().toISOString(),
+            },
+          ],
+        }),
+      });
+    } catch (err) {
+      console.error(`Erreur rappel Discord (${r}):`, err.message);
+    }
+  }
+}
+
+async function checkRappels() {
+  try {
+    const result = await db.execute(
+      `SELECT * FROM taches WHERE rappel_jours IS NOT NULL AND rappel_envoye = 0 AND date_limite IS NOT NULL AND statut != 'done'`,
+    );
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    for (const tache of result.rows) {
+      const deadline = new Date(tache.date_limite);
+      deadline.setHours(0, 0, 0, 0);
+      const diffDays = Math.ceil((deadline - today) / (1000 * 60 * 60 * 24));
+      if (diffDays <= Number(tache.rappel_jours) && diffDays >= 0) {
+        await sendRappelDiscord(tache);
+        await db.execute({
+          sql: "UPDATE taches SET rappel_envoye = 1 WHERE id = ?",
+          args: [tache.id],
+        });
+        console.log(`✅ Rappel envoyé pour "${tache.titre}"`);
+      }
+    }
+  } catch (err) {
+    console.error("Erreur vérification rappels:", err.message);
+  }
+}
+
 async function initDB() {
   await db.execute(`
     CREATE TABLE IF NOT EXISTS taches (
@@ -26,9 +105,30 @@ async function initDB() {
       statut TEXT NOT NULL DEFAULT 'todo',
       date_limite TEXT,
       date_creation TEXT NOT NULL DEFAULT (datetime('now')),
-      position INTEGER DEFAULT 0
+      position INTEGER DEFAULT 0,
+      rappel_jours INTEGER DEFAULT NULL,
+      rappel_envoye INTEGER DEFAULT 0,
+      duree_estimee INTEGER DEFAULT NULL
     )
   `);
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT
+    )
+  `);
+  // Migration: ajoute les colonnes si elles n'existent pas encore
+  for (const sql of [
+    "ALTER TABLE taches ADD COLUMN rappel_jours INTEGER DEFAULT NULL",
+    "ALTER TABLE taches ADD COLUMN rappel_envoye INTEGER DEFAULT 0",
+    "ALTER TABLE taches ADD COLUMN duree_estimee INTEGER DEFAULT NULL",
+  ]) {
+    try {
+      await db.execute(sql);
+    } catch (_) {
+      // Colonne déjà présente — ignoré
+    }
+  }
 }
 
 // ─── ROUTES ──────────────────────────────────────────────────────────────────
@@ -47,7 +147,15 @@ app.get("/api/taches", async (req, res) => {
 
 // POST /api/taches
 app.post("/api/taches", async (req, res) => {
-  const { titre, description, responsable, priorite, date_limite } = req.body;
+  const {
+    titre,
+    description,
+    responsable,
+    priorite,
+    date_limite,
+    rappel_jours,
+    duree_estimee,
+  } = req.body;
   if (!titre?.trim())
     return res.status(400).json({ erreur: "Le titre est requis" });
   try {
@@ -57,8 +165,8 @@ app.post("/api/taches", async (req, res) => {
     const maxPos = Number(maxRes.rows[0]?.max ?? -1);
     const now = new Date().toISOString().replace("T", " ").slice(0, 19);
     const r = await db.execute({
-      sql: `INSERT INTO taches (titre, description, responsable, priorite, statut, date_limite, date_creation, position)
-            VALUES (?, ?, ?, ?, 'todo', ?, ?, ?)`,
+      sql: `INSERT INTO taches (titre, description, responsable, priorite, statut, date_limite, date_creation, position, rappel_jours, duree_estimee)
+            VALUES (?, ?, ?, ?, 'todo', ?, ?, ?, ?, ?)`,
       args: [
         titre.trim(),
         (description || "").trim(),
@@ -67,6 +175,8 @@ app.post("/api/taches", async (req, res) => {
         date_limite || null,
         now,
         maxPos + 1,
+        rappel_jours || null,
+        duree_estimee || null,
       ],
     });
     const newTache = await db.execute({
@@ -90,6 +200,8 @@ app.put("/api/taches/:id", async (req, res) => {
     statut,
     date_limite,
     position,
+    rappel_jours,
+    duree_estimee,
   } = req.body;
   try {
     const ex = await db.execute({
@@ -98,16 +210,28 @@ app.put("/api/taches/:id", async (req, res) => {
     });
     const existing = ex.rows[0];
     if (!existing) return res.status(404).json({ erreur: "Tâche introuvable" });
+    const newDateLimite =
+      date_limite !== undefined ? date_limite : existing.date_limite;
+    const newRappelJours =
+      rappel_jours !== undefined ? rappel_jours : existing.rappel_jours;
+    const rappelEnvoye =
+      newDateLimite !== existing.date_limite ||
+      String(newRappelJours) !== String(existing.rappel_jours)
+        ? 0
+        : Number(existing.rappel_envoye);
     await db.execute({
-      sql: `UPDATE taches SET titre=?, description=?, responsable=?, priorite=?, statut=?, date_limite=?, position=? WHERE id=?`,
+      sql: `UPDATE taches SET titre=?, description=?, responsable=?, priorite=?, statut=?, date_limite=?, position=?, rappel_jours=?, rappel_envoye=?, duree_estimee=? WHERE id=?`,
       args: [
         titre !== undefined ? titre.trim() : existing.titre,
         description !== undefined ? description.trim() : existing.description,
         responsable ?? existing.responsable,
         priorite ?? existing.priorite,
         statut ?? existing.statut,
-        date_limite !== undefined ? date_limite : existing.date_limite,
+        newDateLimite,
         position !== undefined ? Number(position) : existing.position,
+        newRappelJours,
+        rappelEnvoye,
+        duree_estimee !== undefined ? duree_estimee : existing.duree_estimee,
         id,
       ],
     });
@@ -167,13 +291,49 @@ app.delete("/api/taches/:id", async (req, res) => {
   }
 });
 
+// GET /api/settings
+app.get("/api/settings", async (req, res) => {
+  try {
+    const result = await db.execute("SELECT * FROM settings");
+    const obj = {};
+    result.rows.forEach((r) => {
+      obj[r.key] = r.value;
+    });
+    res.json(obj);
+  } catch (err) {
+    res.status(500).json({ erreur: err.message });
+  }
+});
+
+// PUT /api/settings/:key
+app.put("/api/settings/:key", async (req, res) => {
+  const { key } = req.params;
+  const { value } = req.body;
+  const ALLOWED_KEYS = ["project_start", "project_end"];
+  if (!ALLOWED_KEYS.includes(key))
+    return res.status(400).json({ erreur: "Clé non autorisée" });
+  try {
+    await db.execute({
+      sql: "INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+      args: [key, value],
+    });
+    res.json({ key, value });
+  } catch (err) {
+    res.status(500).json({ erreur: err.message });
+  }
+});
+
 // ─── START ────────────────────────────────────────────────────────────────────
 initDB()
-  .then(() =>
+  .then(() => {
     app.listen(PORT, () =>
       console.log(`✅ Serveur démarré sur http://localhost:${PORT}`),
-    ),
-  )
+    );
+    // Vérifie les rappels toutes les heures
+    setInterval(checkRappels, 60 * 60 * 1000);
+    // Vérifie aussi au démarrage
+    setTimeout(checkRappels, 5000);
+  })
   .catch((err) => {
     console.error("Erreur DB:", err);
     process.exit(1);

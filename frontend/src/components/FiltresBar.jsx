@@ -84,6 +84,18 @@ export default function FiltresBar({
             {r}
           </button>
         ))}
+        <button
+          onClick={() =>
+            onFiltreResponsable(filtreResponsable === "Commun" ? "" : "Commun")
+          }
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+            filtreResponsable === "Commun"
+              ? "bg-[#D88D23]/20 text-[#E7B54C] border border-[#D88D23]/30"
+              : "text-dark-500 hover:text-gray-300 hover:bg-dark-700"
+          }`}
+        >
+          Commun
+        </button>
       </div>
 
       {/* Priorité filter */}

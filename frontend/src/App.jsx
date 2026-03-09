@@ -10,13 +10,19 @@ import {
 } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 
+import AdminPanel from "./components/AdminPanel.jsx";
 import KanbanColonne from "./components/KanbanColonne.jsx";
 import TacheCard from "./components/TacheCard.jsx";
 import TacheModal from "./components/TacheModal.jsx";
 import NouvellesTacheModal from "./components/NouvellesTacheModal.jsx";
 import FiltresBar from "./components/FiltresBar.jsx";
 
-import { getTaches, updateStatut, sendDiscordNotification } from "./api.js";
+import {
+  getTaches,
+  updateStatut,
+  sendDiscordNotification,
+  getSettings,
+} from "./api.js";
 import { COLONNES } from "./utils.js";
 import logo from "../logo/ChatGPT Image 8 mars 2026, 22_39_42.png";
 
@@ -33,6 +39,8 @@ export default function App() {
   const [search, setSearch] = useState("");
   const [filtreResponsable, setFiltreResponsable] = useState("");
   const [filtrePriorite, setFiltrePriorite] = useState("");
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [projectSettings, setProjectSettings] = useState({});
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -50,9 +58,19 @@ export default function App() {
     }
   }, []);
 
+  const loadSettings = useCallback(async () => {
+    try {
+      const res = await getSettings();
+      setProjectSettings(res.data);
+    } catch (err) {
+      console.error("Erreur settings:", err);
+    }
+  }, []);
+
   useEffect(() => {
     loadTaches();
-  }, [loadTaches]);
+    loadSettings();
+  }, [loadTaches, loadSettings]);
 
   // Get tasks by column, applied filters
   const getTachesByColonne = (colonneId) => {
@@ -68,9 +86,14 @@ export default function App() {
         }
         return true;
       })
-      .filter((t) =>
-        filtreResponsable ? t.responsable === filtreResponsable : true,
-      )
+      .filter((t) => {
+        if (!filtreResponsable) return true;
+        if (filtreResponsable === "Commun") return t.responsable.includes(",");
+        return t.responsable
+          .split(",")
+          .map((r) => r.trim())
+          .includes(filtreResponsable);
+      })
       .filter((t) => (filtrePriorite ? t.priorite === filtrePriorite : true))
       .sort((a, b) => a.position - b.position);
   };
@@ -194,6 +217,37 @@ export default function App() {
   const done = taches.filter((t) => t.statut === "done").length;
   const progress = total > 0 ? Math.round((done / total) * 100) : 0;
 
+  const timelineData = (() => {
+    if (!projectSettings.project_start || !projectSettings.project_end)
+      return null;
+    const tStart = new Date(projectSettings.project_start);
+    const tEnd = new Date(projectSettings.project_end);
+    const now = new Date();
+    const totalMs = tEnd - tStart;
+    if (totalMs <= 0) return null;
+    const timeProgress = Math.max(
+      0,
+      Math.min(100, Math.round(((now - tStart) / totalMs) * 100)),
+    );
+    const daysLeft = Math.max(
+      0,
+      Math.ceil((tEnd - now) / (1000 * 60 * 60 * 24)),
+    );
+    const startLabel = tStart.toLocaleDateString("fr-FR", {
+      day: "2-digit",
+      month: "short",
+    });
+    const endLabel = tEnd.toLocaleDateString("fr-FR", {
+      day: "2-digit",
+      month: "short",
+    });
+    return { timeProgress, daysLeft, startLabel, endLabel };
+  })();
+
+  const handleSaveSettings = (newSettings) => {
+    setProjectSettings(newSettings);
+  };
+
   return (
     <div className="min-h-screen bg-dark-900 text-gray-100">
       <Toaster
@@ -250,6 +304,31 @@ export default function App() {
 
             {/* New task button */}
             <button
+              onClick={() => setShowAdminPanel(true)}
+              className="p-2 rounded-lg text-dark-400 hover:text-gray-300 hover:bg-dark-700 transition-colors"
+              title="Paramètres du projet"
+            >
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+              </svg>
+            </button>
+            <button
               onClick={() => setShowCreateModal(true)}
               className="flex items-center gap-2 px-5 py-2.5 bg-[#D88D23] hover:bg-[#E7B54C] text-[#161313] rounded-lg text-sm font-bold transition-all shadow-lg shadow-orange-950/20 active:scale-95"
             >
@@ -271,6 +350,37 @@ export default function App() {
           </div>
         </div>
       </header>
+
+      {/* Timeline du projet */}
+      {timelineData && (
+        <div className="border-b border-dark-700 bg-dark-800/20">
+          <div className="max-w-7xl mx-auto px-6 py-2 flex items-center gap-3">
+            <span className="text-xs text-dark-500 whitespace-nowrap">
+              📅 {timelineData.startLabel}
+            </span>
+            <div className="relative flex-1 h-2 bg-dark-700 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-[#D88D23] to-[#E7B54C] rounded-full transition-all duration-700"
+                style={{ width: `${timelineData.timeProgress}%` }}
+              />
+            </div>
+            <span className="text-xs text-dark-500 whitespace-nowrap">
+              🏁 {timelineData.endLabel}
+            </span>
+            <span
+              className={`text-xs font-semibold whitespace-nowrap ${
+                timelineData.daysLeft <= 3
+                  ? "text-red-400"
+                  : timelineData.daysLeft <= 7
+                    ? "text-orange-400"
+                    : "text-[#E7B54C]"
+              }`}
+            >
+              {timelineData.timeProgress}% · {timelineData.daysLeft}j restants
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="border-b border-dark-700 bg-dark-800/40">
@@ -355,6 +465,13 @@ export default function App() {
           onClose={() => setSelectedTache(null)}
           onUpdated={handleUpdated}
           onDeleted={handleDeleted}
+        />
+      )}
+      {showAdminPanel && (
+        <AdminPanel
+          settings={projectSettings}
+          onClose={() => setShowAdminPanel(false)}
+          onSaved={handleSaveSettings}
         />
       )}
     </div>

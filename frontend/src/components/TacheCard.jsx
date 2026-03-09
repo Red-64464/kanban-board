@@ -131,14 +131,26 @@ export default function TacheCard({ tache, onClick, onMove }) {
             )}
           </div>
 
-          {/* Assignee */}
-          <div className="flex items-center gap-1.5 mt-2.5">
-            <span
-              className={`w-5 h-5 rounded-full text-xs flex items-center justify-center font-semibold text-white ${AVATAR_COLORS[tache.responsable] || "bg-gray-600"}`}
-            >
-              {tache.responsable?.[0] || "?"}
-            </span>
-            <span className="text-xs text-gray-500">{tache.responsable}</span>
+          {/* Assignee + durée estimée */}
+          <div className="flex items-center justify-between mt-2.5">
+            <div className="flex items-center gap-1">
+              {tache.responsable.split(",").map((r, i) => (
+                <span
+                  key={r.trim()}
+                  className={`w-5 h-5 rounded-full text-xs flex items-center justify-center font-semibold text-white ${AVATAR_COLORS[r.trim()] || "bg-gray-600"} ${i > 0 ? "-ml-1.5 ring-1 ring-dark-800" : ""}`}
+                >
+                  {r.trim()[0] || "?"}
+                </span>
+              ))}
+              <span className="text-xs text-gray-500 ml-0.5">
+                {tache.responsable.includes(",") ? "Commun" : tache.responsable}
+              </span>
+            </div>
+            {tache.duree_estimee && (
+              <span className="text-xs text-dark-400">
+                ⏱ ~{tache.duree_estimee}h
+              </span>
+            )}
           </div>
         </div>
       </div>

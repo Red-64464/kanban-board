@@ -16,6 +16,7 @@ import TacheCard from "./components/TacheCard.jsx";
 import TacheModal from "./components/TacheModal.jsx";
 import NouvellesTacheModal from "./components/NouvellesTacheModal.jsx";
 import FiltresBar from "./components/FiltresBar.jsx";
+import TimelineMilestones from "./components/TimelineMilestones.jsx";
 
 import {
   getTaches,
@@ -351,36 +352,11 @@ export default function App() {
         </div>
       </header>
 
-      {/* Timeline du projet */}
-      {timelineData && (
-        <div className="border-b border-dark-700 bg-dark-800/20">
-          <div className="max-w-7xl mx-auto px-6 py-2 flex items-center gap-3">
-            <span className="text-xs text-dark-500 whitespace-nowrap">
-              📅 {timelineData.startLabel}
-            </span>
-            <div className="relative flex-1 h-2 bg-dark-700 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-[#D88D23] to-[#E7B54C] rounded-full transition-all duration-700"
-                style={{ width: `${timelineData.timeProgress}%` }}
-              />
-            </div>
-            <span className="text-xs text-dark-500 whitespace-nowrap">
-              🏁 {timelineData.endLabel}
-            </span>
-            <span
-              className={`text-xs font-semibold whitespace-nowrap ${
-                timelineData.daysLeft <= 3
-                  ? "text-red-400"
-                  : timelineData.daysLeft <= 7
-                    ? "text-orange-400"
-                    : "text-[#E7B54C]"
-              }`}
-            >
-              {timelineData.timeProgress}% · {timelineData.daysLeft}j restants
-            </span>
-          </div>
-        </div>
-      )}
+      {/* Timeline du projet avec milestones */}
+      <TimelineMilestones
+        timelineData={timelineData}
+        projectSettings={projectSettings}
+      />
 
       {/* Filters */}
       <div className="border-b border-dark-700 bg-dark-800/40">

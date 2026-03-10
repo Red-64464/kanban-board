@@ -255,10 +255,9 @@ function MilestonePoint({ milestone, position, isPast, isCurrent, isAbove }) {
       style={{
         position: "absolute",
         left: `${position}%`,
-        top: "50%",
+        top: 8,
         transform: "translate(-50%, -50%)",
         zIndex: hovered ? 50 : 20,
-        /* overflow visible pour que le tooltip ne soit jamais coupé */
         overflow: "visible",
       }}
       onMouseEnter={() => setHovered(true)}
@@ -411,20 +410,12 @@ export default function TimelineMilestones({ timelineData, projectSettings }) {
           {/* ── Zone barre + milestones ── */}
           <div
             className="relative flex-1"
-            /* hauteur : 18px label haut + 4px point + 18px label bas = 40px
-               on ajoute overflow:visible pour que le tooltip ne soit pas coupé */
-            style={{ height: 40, overflow: "visible" }}
+            style={{ height: 36, overflow: "visible" }}
           >
-            {/* Track gris */}
+            {/* Track gris — positionné en haut */}
             <div
               className="absolute rounded-full bg-dark-700"
-              style={{
-                left: 0,
-                right: 0,
-                top: "50%",
-                height: 3,
-                transform: "translateY(-50%)",
-              }}
+              style={{ left: 0, right: 0, top: 8, height: 3 }}
             />
 
             {/* Progression dorée */}
@@ -433,9 +424,8 @@ export default function TimelineMilestones({ timelineData, projectSettings }) {
               style={{
                 left: 0,
                 width: `${timelineData.timeProgress}%`,
-                top: "50%",
+                top: 8,
                 height: 3,
-                transform: "translateY(-50%)",
                 background: "linear-gradient(to right, #D88D23, #E7B54C)",
                 boxShadow: "0 0 8px rgba(231,181,76,0.45)",
               }}
@@ -446,7 +436,7 @@ export default function TimelineMilestones({ timelineData, projectSettings }) {
               className="absolute z-10"
               style={{
                 left: `${timelineData.timeProgress}%`,
-                top: "50%",
+                top: 8,
                 transform: "translate(-50%, -50%)",
               }}
             >
@@ -469,7 +459,6 @@ export default function TimelineMilestones({ timelineData, projectSettings }) {
                 !isPast &&
                 i > 0 &&
                 new Date(visibleMilestones[i - 1].date) < now;
-              const isAbove = i % 2 === 0;
               return (
                 <MilestonePoint
                   key={m.id}
@@ -477,7 +466,7 @@ export default function TimelineMilestones({ timelineData, projectSettings }) {
                   position={pos}
                   isPast={isPast}
                   isCurrent={isCurrent}
-                  isAbove={isAbove}
+                  isAbove={false}
                 />
               );
             })}

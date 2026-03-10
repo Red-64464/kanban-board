@@ -11,6 +11,8 @@ export const updateTache = (id, data) => api.put(`/taches/${id}`, data);
 export const updateStatut = (id, statut, position) =>
   api.patch(`/taches/${id}/statut`, { statut, position });
 export const deleteTache = (id) => api.delete(`/taches/${id}`);
+export const toggleMilestoneRappel = (id, disabled) =>
+  api.patch(`/milestones/${id}/rappel`, { disabled });
 
 const WEBHOOKS = {
   Ilias:

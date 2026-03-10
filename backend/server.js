@@ -94,6 +94,151 @@ async function checkRappels() {
   }
 }
 
+// ─── MILESTONES DU PROJET (planning fixe) ────────────────────────────────────
+const PROJECT_MILESTONES = [
+  {
+    id: "s1",
+    date: "2026-03-16",
+    label: "Semaine du 16 mars",
+    tasks: ["Inscription des équipes", "Développement d'un Proof of Concept"],
+  },
+  {
+    id: "s2",
+    date: "2026-03-23",
+    label: "Semaine du 23 mars",
+    tasks: [
+      "Fin des inscriptions des équipes",
+      "Analyse du projet",
+      "Écriture du README.md",
+    ],
+  },
+  {
+    id: "s3",
+    date: "2026-03-30",
+    label: "Semaines du 30 mars – 24 avr.",
+    tasks: ["Analyse approfondie du projet", "Implémentation du projet"],
+  },
+  {
+    id: "s4",
+    date: "2026-04-27",
+    label: "Semaines du 27 avr. – 7 mai",
+    tasks: ["Vacances de printemps 🌸"],
+    isBreak: true,
+  },
+  {
+    id: "s5",
+    date: "2026-05-11",
+    label: "Semaine du 11 mai",
+    tasks: [
+      "Remise de la vidéo sur Google Drive",
+      "Remise finale du code sur Git",
+      "Dernière mise à jour du README.md",
+      "Inscription à l'évaluation finale",
+    ],
+    isDeadline: true,
+  },
+  {
+    id: "s6",
+    date: "2026-06-01",
+    label: "Session mai/juin",
+    tasks: ["Évaluation finale"],
+    isFinal: true,
+  },
+];
+
+// Envoie un rappel milestone à Ilias ET Mehdi
+async function sendRappelMilestone(milestone, diffDays) {
+  const couleur = milestone.isDeadline
+    ? 0xf97316 // orange
+    : milestone.isFinal
+      ? 0xf43f5e // rose
+      : milestone.isBreak
+        ? 0xf472b6 // rose pâle
+        : 0x818cf8; // indigo
+
+  const urgenceLabel =
+    diffDays === 0
+      ? "⚠️ **C'est aujourd'hui !**"
+      : diffDays === 1
+        ? "⚡ **Demain !**"
+        : `📅 Dans **${diffDays} jour(s)**`;
+
+  const tasksText = milestone.tasks.map((t) => `• ${t}`).join("\n");
+
+  const embed = {
+    title: `🗓️ ${milestone.label}`,
+    description: `${urgenceLabel}\n\n**Tâches prévues :**\n${tasksText}`,
+    color: couleur,
+    footer: { text: "Resto2Luxe — Rappel Planning" },
+    timestamp: new Date().toISOString(),
+  };
+
+  for (const [name, webhookUrl] of Object.entries(WEBHOOKS)) {
+    const mention = DISCORD_MENTIONS[name] || name;
+    try {
+      await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content: `📆 **RAPPEL PLANNING** — ${mention}`,
+          embeds: [embed],
+        }),
+      });
+      console.log(`✅ Rappel milestone "${milestone.label}" envoyé à ${name}`);
+    } catch (err) {
+      console.error(`Erreur rappel milestone (${name}):`, err.message);
+    }
+  }
+}
+
+async function checkMilestoneRappels() {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayStr = today.toISOString().slice(0, 10);
+
+    for (const milestone of PROJECT_MILESTONES) {
+      // Pas de rappel pour les congés
+      if (milestone.isBreak) continue;
+
+      const milestoneDate = new Date(milestone.date);
+      milestoneDate.setHours(0, 0, 0, 0);
+      const diffDays = Math.ceil(
+        (milestoneDate - today) / (1000 * 60 * 60 * 24),
+      );
+
+      // On rappelle uniquement à J-3 et J-1
+      if (diffDays !== 3 && diffDays !== 1) continue;
+
+      // Vérifie si le rappel a été désactivé manuellement
+      const disabledKey = `milestone_disabled_${milestone.id}`;
+      const disabled = await db.execute({
+        sql: "SELECT value FROM settings WHERE key = ?",
+        args: [disabledKey],
+      });
+      if (disabled.rows.length > 0 && disabled.rows[0].value === "1") continue;
+
+      // Vérifie si le rappel a déjà été envoyé aujourd'hui
+      const sentKey = `milestone_sent_${milestone.id}_J${diffDays}_${todayStr}`;
+      const alreadySent = await db.execute({
+        sql: "SELECT value FROM settings WHERE key = ?",
+        args: [sentKey],
+      });
+      if (alreadySent.rows.length > 0) continue;
+
+      await sendRappelMilestone(milestone, diffDays);
+
+      // Marque comme envoyé
+      await db.execute({
+        sql: "INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+        args: [sentKey, new Date().toISOString()],
+      });
+    }
+  } catch (err) {
+    console.error("Erreur vérification rappels milestones:", err.message);
+  }
+}
+
 async function initDB() {
   await db.execute(`
     CREATE TABLE IF NOT EXISTS taches (
@@ -310,7 +455,11 @@ app.put("/api/settings/:key", async (req, res) => {
   const { key } = req.params;
   const { value } = req.body;
   const ALLOWED_KEYS = ["project_start", "project_end"];
-  if (!ALLOWED_KEYS.includes(key))
+  if (
+    !ALLOWED_KEYS.includes(key) &&
+    !key.startsWith("milestone_disabled_") &&
+    !key.startsWith("milestone_sent_")
+  )
     return res.status(400).json({ erreur: "Clé non autorisée" });
   try {
     await db.execute({
@@ -323,16 +472,38 @@ app.put("/api/settings/:key", async (req, res) => {
   }
 });
 
+// PATCH /api/milestones/:id/rappel — active ou désactive les rappels d'un milestone
+app.patch("/api/milestones/:id/rappel", async (req, res) => {
+  const { id } = req.params;
+  const { disabled } = req.body; // true = désactivé, false = réactivé
+  const validIds = PROJECT_MILESTONES.map((m) => m.id);
+  if (!validIds.includes(id))
+    return res.status(404).json({ erreur: "Milestone introuvable" });
+  const key = `milestone_disabled_${id}`;
+  try {
+    await db.execute({
+      sql: "INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+      args: [key, disabled ? "1" : "0"],
+    });
+    res.json({ id, disabled });
+  } catch (err) {
+    res.status(500).json({ erreur: err.message });
+  }
+});
+
 // ─── START ────────────────────────────────────────────────────────────────────
 initDB()
   .then(() => {
     app.listen(PORT, () =>
       console.log(`✅ Serveur démarré sur http://localhost:${PORT}`),
     );
-    // Vérifie les rappels toutes les heures
+    // Vérifie les rappels tâches toutes les heures
     setInterval(checkRappels, 60 * 60 * 1000);
-    // Vérifie aussi au démarrage
     setTimeout(checkRappels, 5000);
+
+    // Vérifie les rappels milestones toutes les heures
+    setInterval(checkMilestoneRappels, 60 * 60 * 1000);
+    setTimeout(checkMilestoneRappels, 8000);
   })
   .catch((err) => {
     console.error("Erreur DB:", err);

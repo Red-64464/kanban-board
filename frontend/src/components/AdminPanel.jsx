@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { updateSetting } from "../api.js";
+import { useState, useEffect } from "react";
+import { updateSetting, toggleMilestoneRappel } from "../api.js";
+import { MILESTONES } from "./TimelineMilestones.jsx";
 import toast from "react-hot-toast";
 
 export default function AdminPanel({ settings, onClose, onSaved }) {
@@ -8,6 +9,17 @@ export default function AdminPanel({ settings, onClose, onSaved }) {
     project_end: settings.project_end || "",
   });
   const [loading, setLoading] = useState(false);
+
+  // État des rappels milestones : { s1: false, s2: false, ... }
+  // true = désactivé
+  const [rappelsDisabled, setRappelsDisabled] = useState(() => {
+    const init = {};
+    MILESTONES.forEach((m) => {
+      init[m.id] = settings[`milestone_disabled_${m.id}`] === "1";
+    });
+    return init;
+  });
+  const [rappelLoading, setRappelLoading] = useState(null);
 
   // Timeline calculations based on form values (live preview)
   const tStart = form.project_start ? new Date(form.project_start) : null;
@@ -29,6 +41,20 @@ export default function AdminPanel({ settings, onClose, onSaved }) {
     : 0;
   const isOver = tEnd && now > tEnd;
   const isStarted = tStart && now >= tStart;
+
+  const handleToggleRappel = async (milestoneId) => {
+    const newValue = !rappelsDisabled[milestoneId];
+    setRappelLoading(milestoneId);
+    try {
+      await toggleMilestoneRappel(milestoneId, newValue);
+      setRappelsDisabled((prev) => ({ ...prev, [milestoneId]: newValue }));
+      toast.success(newValue ? "Rappel désactivé" : "Rappel réactivé");
+    } catch {
+      toast.error("Erreur lors de la mise à jour du rappel");
+    } finally {
+      setRappelLoading(null);
+    }
+  };
 
   const handleSave = async () => {
     if (!form.project_start || !form.project_end) {
@@ -64,7 +90,7 @@ export default function AdminPanel({ settings, onClose, onSaved }) {
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div className="relative w-full max-w-lg bg-dark-800 rounded-2xl border border-dark-600 shadow-2xl animate-scale-in">
+      <div className="relative w-full max-w-lg bg-dark-800 rounded-2xl border border-dark-600 shadow-2xl animate-scale-in max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-dark-600">
           <div className="flex items-center gap-2">
@@ -111,7 +137,7 @@ export default function AdminPanel({ settings, onClose, onSaved }) {
           </button>
         </div>
 
-        <div className="p-6 space-y-5">
+        <div className="p-6 space-y-5 overflow-y-auto">
           {/* Date inputs */}
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -223,6 +249,91 @@ export default function AdminPanel({ settings, onClose, onSaved }) {
               </div>
             </div>
           )}
+
+          {/* ── Rappels Discord milestones ── */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-sm font-semibold text-gray-200">
+                🔔 Rappels Discord
+              </span>
+              <span className="text-[10px] text-gray-500 bg-dark-700 px-2 py-0.5 rounded-full border border-dark-600">
+                J‑3 &amp; J‑1 avant chaque étape
+              </span>
+            </div>
+            <div className="space-y-2">
+              {MILESTONES.filter((m) => !m.isBreak).map((m) => {
+                const isDisabled = rappelsDisabled[m.id];
+                const isLoading = rappelLoading === m.id;
+                const milestoneDate = new Date(m.date);
+                const isPast = milestoneDate < new Date();
+                return (
+                  <div
+                    key={m.id}
+                    className={`flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border transition-colors ${
+                      isDisabled
+                        ? "bg-dark-800/30 border-dark-700 opacity-60"
+                        : "bg-dark-700/40 border-dark-600"
+                    }`}
+                  >
+                    {/* Indicateur couleur + label */}
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span
+                        className="w-2 h-2 rounded-full shrink-0"
+                        style={{ background: isDisabled ? "#4b5563" : m.color }}
+                      />
+                      <span className="text-xs font-medium text-gray-300 truncate">
+                        {m.label}
+                      </span>
+                      {isPast && (
+                        <span className="text-[10px] text-gray-600 italic shrink-0">
+                          passé
+                        </span>
+                      )}
+                      {m.isDeadline && (
+                        <span className="text-[10px] bg-orange-500/15 text-orange-400 px-1.5 py-0.5 rounded-full border border-orange-500/25 shrink-0">
+                          RENDU
+                        </span>
+                      )}
+                      {m.isFinal && (
+                        <span className="text-[10px] bg-rose-500/15 text-rose-400 px-1.5 py-0.5 rounded-full border border-rose-500/25 shrink-0">
+                          FINAL
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Toggle */}
+                    <button
+                      onClick={() => handleToggleRappel(m.id)}
+                      disabled={isLoading || isPast}
+                      title={
+                        isPast
+                          ? "Étape passée"
+                          : isDisabled
+                            ? "Réactiver le rappel"
+                            : "Désactiver le rappel"
+                      }
+                      className={`relative shrink-0 w-10 h-5 rounded-full border transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none ${
+                        !isDisabled
+                          ? "bg-[#D88D23] border-[#D88D23]"
+                          : "bg-dark-700 border-dark-600"
+                      }`}
+                    >
+                      <span
+                        className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all duration-200 ${
+                          !isDisabled ? "left-[22px]" : "left-0.5"
+                        }`}
+                      />
+                      {isLoading && (
+                        <span className="absolute inset-0 flex items-center justify-center">
+                          <span className="w-3 h-3 border border-white/50 border-t-white rounded-full animate-spin" />
+                        </span>
+                      )}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
 
           {/* Buttons */}
           <div className="flex justify-end gap-3 pt-1">

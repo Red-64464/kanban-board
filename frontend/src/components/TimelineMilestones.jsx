@@ -77,91 +77,168 @@ function getPositionPercent(dateStr, startDate, endDate) {
 
 // ─── Tooltip ──────────────────────────────────────────────────────────────────
 function MilestoneTooltip({ milestone, position, isAbove }) {
-  const isRight = position > 70;
-  const isLeft = position < 30;
+  const isRight = position > 72;
+  const isLeft = position < 28;
 
   return (
     <div
-      className={`absolute z-50 pointer-events-none transition-all duration-200 ${
-        isAbove ? "bottom-[calc(100%+14px)]" : "top-[calc(100%+14px)]"
-      } ${
-        isRight
-          ? "right-0 translate-x-2"
+      style={{
+        position: "absolute",
+        zIndex: 100,
+        pointerEvents: "none",
+        /* Se place au-dessus ou en-dessous du point selon isAbove */
+        ...(isAbove
+          ? { bottom: "calc(100% + 18px)" }
+          : { top: "calc(100% + 18px)" }),
+        /* Alignement horizontal intelligent */
+        ...(isRight
+          ? { right: 0 }
           : isLeft
-            ? "left-0 -translate-x-2"
-            : "left-1/2 -translate-x-1/2"
-      }`}
+            ? { left: 0 }
+            : { left: "50%", transform: "translateX(-50%)" }),
+      }}
     >
+      {/* Carte tooltip */}
       <div
-        className="w-52 rounded-xl border shadow-2xl shadow-black/50 p-3 text-left"
         style={{
-          background: "#1c2128",
-          borderColor: milestone.color + "50",
-          boxShadow: `0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px ${milestone.color}30`,
+          width: 220,
+          background: "#161b22",
+          border: `1px solid ${milestone.color}55`,
+          borderRadius: 12,
+          padding: "10px 12px",
+          boxShadow: `0 12px 40px rgba(0,0,0,0.65), 0 0 0 1px ${milestone.color}25`,
         }}
       >
         {/* Header */}
-        <div className="flex items-center gap-2 mb-2.5">
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 7,
+            marginBottom: 8,
+          }}
+        >
           <span
-            className="w-2.5 h-2.5 rounded-full flex-shrink-0 ring-2"
             style={{
+              width: 9,
+              height: 9,
+              borderRadius: "50%",
               background: milestone.color,
-              boxShadow: `0 0 8px ${milestone.color}80`,
-              ringColor: milestone.color + "30",
+              boxShadow: `0 0 8px ${milestone.color}`,
+              flexShrink: 0,
             }}
           />
-          <p className="text-xs font-bold text-gray-100 leading-tight">
+          <span
+            style={{
+              fontSize: 12,
+              fontWeight: 700,
+              color: "#f3f4f6",
+              flex: 1,
+              lineHeight: 1.3,
+            }}
+          >
             Semaine du {milestone.label}
-          </p>
+          </span>
           {milestone.isDeadline && (
-            <span className="ml-auto text-[10px] bg-orange-500/20 text-orange-400 px-1.5 py-0.5 rounded-full font-semibold border border-orange-500/30">
+            <span
+              style={{
+                fontSize: 9,
+                background: "rgba(249,115,22,0.18)",
+                color: "#fb923c",
+                padding: "2px 6px",
+                borderRadius: 99,
+                border: "1px solid rgba(249,115,22,0.35)",
+                fontWeight: 700,
+              }}
+            >
               RENDU
             </span>
           )}
           {milestone.isFinal && (
-            <span className="ml-auto text-[10px] bg-rose-500/20 text-rose-400 px-1.5 py-0.5 rounded-full font-semibold border border-rose-500/30">
+            <span
+              style={{
+                fontSize: 9,
+                background: "rgba(244,63,94,0.18)",
+                color: "#fb7185",
+                padding: "2px 6px",
+                borderRadius: 99,
+                border: "1px solid rgba(244,63,94,0.35)",
+                fontWeight: 700,
+              }}
+            >
               FINAL
             </span>
           )}
           {milestone.isBreak && (
-            <span className="ml-auto text-[10px] bg-pink-500/20 text-pink-400 px-1.5 py-0.5 rounded-full font-semibold border border-pink-500/30">
+            <span
+              style={{
+                fontSize: 9,
+                background: "rgba(244,114,182,0.18)",
+                color: "#f9a8d4",
+                padding: "2px 6px",
+                borderRadius: 99,
+                border: "1px solid rgba(244,114,182,0.35)",
+                fontWeight: 700,
+              }}
+            >
               CONGÉS
             </span>
           )}
         </div>
 
-        {/* Tasks */}
-        <ul className="space-y-1.5">
+        {/* Tâches */}
+        <ul
+          style={{
+            margin: 0,
+            padding: 0,
+            listStyle: "none",
+            display: "flex",
+            flexDirection: "column",
+            gap: 5,
+          }}
+        >
           {milestone.tasks.map((task, i) => (
-            <li key={i} className="flex items-start gap-1.5">
+            <li
+              key={i}
+              style={{ display: "flex", alignItems: "flex-start", gap: 7 }}
+            >
               <span
-                className="w-1 h-1 rounded-full mt-1.5 flex-shrink-0"
-                style={{ background: milestone.color }}
+                style={{
+                  width: 5,
+                  height: 5,
+                  borderRadius: "50%",
+                  background: milestone.color,
+                  flexShrink: 0,
+                  marginTop: 4,
+                }}
               />
-              <span className="text-[11px] text-gray-300 leading-snug">
+              <span
+                style={{ fontSize: 11, color: "#d1d5db", lineHeight: 1.45 }}
+              >
                 {task}
               </span>
             </li>
           ))}
         </ul>
 
-        {/* Flèche du tooltip */}
+        {/* Flèche */}
         <div
-          className={`absolute w-2.5 h-2.5 rotate-45 ${
-            isAbove ? "-bottom-[6px]" : "-top-[6px]"
-          } ${
-            isRight
-              ? "right-4"
-              : isLeft
-                ? "left-4"
-                : "left-1/2 -translate-x-1/2"
-          }`}
           style={{
-            background: "#1c2128",
-            borderRight: isAbove ? `1px solid ${milestone.color}50` : "none",
-            borderBottom: isAbove ? `1px solid ${milestone.color}50` : "none",
-            borderLeft: !isAbove ? `1px solid ${milestone.color}50` : "none",
-            borderTop: !isAbove ? `1px solid ${milestone.color}50` : "none",
+            position: "absolute",
+            width: 10,
+            height: 10,
+            background: "#161b22",
+            transform: "rotate(45deg)",
+            ...(isAbove ? { bottom: -5 } : { top: -5 }),
+            ...(isRight
+              ? { right: 14 }
+              : isLeft
+                ? { left: 14 }
+                : { left: "50%", marginLeft: -5 }),
+            borderRight: isAbove ? `1px solid ${milestone.color}45` : "none",
+            borderBottom: isAbove ? `1px solid ${milestone.color}45` : "none",
+            borderLeft: !isAbove ? `1px solid ${milestone.color}45` : "none",
+            borderTop: !isAbove ? `1px solid ${milestone.color}45` : "none",
           }}
         />
       </div>
@@ -175,45 +252,95 @@ function MilestonePoint({ milestone, position, isPast, isCurrent, isAbove }) {
 
   return (
     <div
-      className="absolute top-1/2 -translate-y-1/2"
-      style={{ left: `${position}%` }}
+      style={{
+        position: "absolute",
+        left: `${position}%`,
+        top: "50%",
+        transform: "translate(-50%, -50%)",
+        zIndex: hovered ? 50 : 20,
+        /* overflow visible pour que le tooltip ne soit jamais coupé */
+        overflow: "visible",
+      }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {/* Pulse animation pour le milestone actuel */}
+      {/* Pulse pour le milestone en cours */}
       {isCurrent && (
         <span
-          className="absolute inset-0 rounded-full animate-ping opacity-40"
-          style={{ background: milestone.color, transform: "scale(1.8)" }}
+          style={{
+            position: "absolute",
+            inset: -6,
+            borderRadius: "50%",
+            background: milestone.color,
+            opacity: 0.35,
+            animation: "ping 1.2s cubic-bezier(0,0,0.2,1) infinite",
+          }}
         />
+      )}
+
+      {/* Label AU-DESSUS du point */}
+      {isAbove && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: "calc(100% + 5px)",
+            left: "50%",
+            transform: "translateX(-50%)",
+            whiteSpace: "nowrap",
+            fontSize: 10,
+            fontWeight: 700,
+            letterSpacing: "0.03em",
+            color: hovered
+              ? milestone.color
+              : isCurrent
+                ? "#d1d5db"
+                : isPast
+                  ? "#9ca3af"
+                  : "#6b7280",
+            transition: "color 0.15s",
+          }}
+        >
+          {milestone.shortLabel}
+        </div>
       )}
 
       {/* Point principal */}
       <div
-        className={`relative w-3.5 h-3.5 rounded-full border-2 cursor-pointer transition-all duration-200 -translate-x-1/2 ${
-          hovered ? "scale-150" : isPast ? "scale-110" : "scale-100"
-        }`}
         style={{
-          background: isPast || isCurrent ? milestone.color : "#21262d",
-          borderColor: milestone.color,
+          width: 14,
+          height: 14,
+          borderRadius: "50%",
+          border: `2px solid ${milestone.color}`,
+          background: isPast || isCurrent ? milestone.color : "#161b22",
           boxShadow: hovered
-            ? `0 0 16px ${milestone.color}90, 0 0 4px ${milestone.color}`
-            : isPast
-              ? `0 0 8px ${milestone.color}50`
-              : "none",
+            ? `0 0 0 4px ${milestone.color}30, 0 0 16px ${milestone.color}70`
+            : isCurrent
+              ? `0 0 10px ${milestone.color}60`
+              : isPast
+                ? `0 0 6px ${milestone.color}40`
+                : "none",
+          transform: hovered
+            ? "scale(1.6)"
+            : isCurrent
+              ? "scale(1.2)"
+              : "scale(1)",
+          transition: "transform 0.15s, box-shadow 0.15s",
+          cursor: "pointer",
+          position: "relative",
+          flexShrink: 0,
         }}
       >
-        {/* Icône checkmark si passé */}
-        {isPast && !isCurrent && (
+        {/* Checkmark si passé */}
+        {isPast && (
           <svg
-            className="absolute inset-0 w-full h-full p-[2px]"
             viewBox="0 0 12 12"
             fill="none"
+            style={{ position: "absolute", inset: 1 }}
           >
             <path
               d="M2 6l3 3 5-5"
               stroke="#0d1117"
-              strokeWidth="2"
+              strokeWidth="2.2"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
@@ -221,23 +348,31 @@ function MilestonePoint({ milestone, position, isPast, isCurrent, isAbove }) {
         )}
       </div>
 
-      {/* Label sous/sur le point */}
-      <div
-        className={`absolute whitespace-nowrap text-[9px] font-semibold transition-colors duration-200 -translate-x-1/2 ${
-          isAbove ? "bottom-[18px]" : "top-[18px]"
-        } ${
-          hovered
-            ? "text-gray-200"
-            : isCurrent
-              ? "text-gray-300"
-              : isPast
-                ? "text-gray-500"
-                : "text-dark-500"
-        }`}
-        style={{ color: hovered ? milestone.color : undefined }}
-      >
-        {milestone.shortLabel}
-      </div>
+      {/* Label EN-DESSOUS du point */}
+      {!isAbove && (
+        <div
+          style={{
+            position: "absolute",
+            top: "calc(100% + 5px)",
+            left: "50%",
+            transform: "translateX(-50%)",
+            whiteSpace: "nowrap",
+            fontSize: 10,
+            fontWeight: 700,
+            letterSpacing: "0.03em",
+            color: hovered
+              ? milestone.color
+              : isCurrent
+                ? "#d1d5db"
+                : isPast
+                  ? "#9ca3af"
+                  : "#6b7280",
+            transition: "color 0.15s",
+          }}
+        >
+          {milestone.shortLabel}
+        </div>
+      )}
 
       {/* Tooltip au hover */}
       {hovered && (
@@ -259,7 +394,6 @@ export default function TimelineMilestones({ timelineData, projectSettings }) {
   const endDate = new Date(projectSettings.project_end);
   const now = new Date();
 
-  // Filtre les milestones qui sont dans la plage du projet
   const visibleMilestones = MILESTONES.filter((m) => {
     const d = new Date(m.date);
     return d >= startDate && d <= endDate;
@@ -267,44 +401,66 @@ export default function TimelineMilestones({ timelineData, projectSettings }) {
 
   return (
     <div className="border-b border-dark-700 bg-dark-800/20">
-      <div className="max-w-7xl mx-auto px-6 py-4">
-        {/* Ligne principale de la timeline */}
-        <div className="flex items-center gap-3 mb-1">
-          {/* Date début */}
-          <span className="text-xs text-dark-500 whitespace-nowrap font-medium">
+      <div className="max-w-7xl mx-auto px-6 pt-2 pb-4">
+        {/* ── Rangée header : date début · barre · date fin · stats ── */}
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-gray-500 whitespace-nowrap font-medium shrink-0">
             📅 {timelineData.startLabel}
           </span>
 
-          {/* Zone timeline avec milestones */}
-          <div className="relative flex-1 h-10 flex items-center">
-            {/* Track de fond */}
-            <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[3px] bg-dark-700 rounded-full" />
-
-            {/* Progression */}
+          {/* ── Zone barre + milestones ── */}
+          <div
+            className="relative flex-1"
+            /* hauteur : 18px label haut + 4px point + 18px label bas = 40px
+               on ajoute overflow:visible pour que le tooltip ne soit pas coupé */
+            style={{ height: 40, overflow: "visible" }}
+          >
+            {/* Track gris */}
             <div
-              className="absolute left-0 top-1/2 -translate-y-1/2 h-[3px] rounded-full transition-all duration-700"
+              className="absolute rounded-full bg-dark-700"
               style={{
-                width: `${timelineData.timeProgress}%`,
-                background: "linear-gradient(to right, #D88D23, #E7B54C)",
-                boxShadow: "0 0 8px rgba(231,181,76,0.4)",
+                left: 0,
+                right: 0,
+                top: "50%",
+                height: 3,
+                transform: "translateY(-50%)",
               }}
             />
 
-            {/* Curseur "aujourd'hui" */}
+            {/* Progression dorée */}
             <div
-              className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-1"
-              style={{ left: `${timelineData.timeProgress}%` }}
+              className="absolute rounded-full transition-all duration-700"
+              style={{
+                left: 0,
+                width: `${timelineData.timeProgress}%`,
+                top: "50%",
+                height: 3,
+                transform: "translateY(-50%)",
+                background: "linear-gradient(to right, #D88D23, #E7B54C)",
+                boxShadow: "0 0 8px rgba(231,181,76,0.45)",
+              }}
+            />
+
+            {/* Curseur aujourd'hui */}
+            <div
+              className="absolute z-10"
+              style={{
+                left: `${timelineData.timeProgress}%`,
+                top: "50%",
+                transform: "translate(-50%, -50%)",
+              }}
             >
               <div
-                className="w-2 h-2 rounded-full ring-2 ring-[#E7B54C]/40"
+                className="w-2.5 h-2.5 rounded-full"
                 style={{
                   background: "#E7B54C",
-                  boxShadow: "0 0 10px rgba(231,181,76,0.7)",
+                  boxShadow: "0 0 12px rgba(231,181,76,0.8)",
+                  outline: "2px solid rgba(231,181,76,0.25)",
                 }}
               />
             </div>
 
-            {/* Points milestones — labels alternés haut/bas */}
+            {/* Points milestones */}
             {visibleMilestones.map((m, i) => {
               const pos = getPositionPercent(m.date, startDate, endDate);
               const milestoneDate = new Date(m.date);
@@ -313,9 +469,7 @@ export default function TimelineMilestones({ timelineData, projectSettings }) {
                 !isPast &&
                 i > 0 &&
                 new Date(visibleMilestones[i - 1].date) < now;
-              // Alterne labels haut/bas
               const isAbove = i % 2 === 0;
-
               return (
                 <MilestonePoint
                   key={m.id}
@@ -329,14 +483,12 @@ export default function TimelineMilestones({ timelineData, projectSettings }) {
             })}
           </div>
 
-          {/* Date fin */}
-          <span className="text-xs text-dark-500 whitespace-nowrap font-medium">
+          <span className="text-xs text-gray-500 whitespace-nowrap font-medium shrink-0">
             🏁 {timelineData.endLabel}
           </span>
 
-          {/* Indicateur % + jours restants */}
           <span
-            className={`text-xs font-bold whitespace-nowrap tabular-nums ${
+            className={`text-xs font-bold whitespace-nowrap tabular-nums shrink-0 ${
               timelineData.daysLeft <= 3
                 ? "text-red-400"
                 : timelineData.daysLeft <= 14
@@ -345,34 +497,33 @@ export default function TimelineMilestones({ timelineData, projectSettings }) {
             }`}
           >
             {timelineData.timeProgress}%
-            <span className="text-dark-500 font-normal mx-1">·</span>
+            <span className="text-gray-600 font-normal mx-1">·</span>
             {timelineData.daysLeft}j
           </span>
         </div>
 
-        {/* Légende compacte sous la timeline */}
-        <div className="flex items-center gap-3 mt-3 flex-wrap pl-1">
-          <span className="text-[10px] text-dark-600 uppercase tracking-widest font-semibold mr-1">
+        {/* ── Légende ── */}
+        <div className="flex items-center gap-x-4 gap-y-1 mt-3 flex-wrap">
+          <span className="text-[10px] text-gray-600 uppercase tracking-widest font-semibold">
             Étapes
           </span>
           {visibleMilestones.map((m) => {
-            const milestoneDate = new Date(m.date);
-            const isPast = milestoneDate < now;
+            const isPast = new Date(m.date) < now;
             return (
               <div key={m.id} className="flex items-center gap-1.5">
                 <span
-                  className="w-1.5 h-1.5 rounded-full"
+                  className="w-2 h-2 rounded-full shrink-0"
                   style={{
                     background: isPast ? m.color : "transparent",
                     border: `1.5px solid ${m.color}`,
-                    opacity: isPast ? 1 : 0.5,
+                    opacity: isPast ? 1 : 0.55,
                   }}
                 />
                 <span
-                  className="text-[10px] font-medium"
+                  className="text-[11px] font-medium"
                   style={{
-                    color: isPast ? m.color : "#4a5568",
-                    opacity: isPast ? 1 : 0.6,
+                    color: isPast ? m.color : "#6b7280",
+                    opacity: isPast ? 1 : 0.65,
                   }}
                 >
                   {m.label}
@@ -380,7 +531,7 @@ export default function TimelineMilestones({ timelineData, projectSettings }) {
               </div>
             );
           })}
-          <span className="text-[10px] text-dark-600 ml-auto italic">
+          <span className="text-[10px] text-gray-600 ml-auto italic hidden sm:block">
             Survolez un point pour voir les tâches
           </span>
         </div>
